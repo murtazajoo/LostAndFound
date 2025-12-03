@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors({
     origin: [
-        'http://localhost:3000', "https://lost-and-found-asc.vercel.app/"
+        'http://localhost:3000', "https://lost-and-found-asc.vercel.app"
     ], credentials: true
 }));
 app.use(bodyParser.json());
