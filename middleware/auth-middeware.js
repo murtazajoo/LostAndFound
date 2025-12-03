@@ -1,11 +1,17 @@
 import jwt from 'jsonwebtoken';
-const isAuthenticated = (req, res, next) => {
-    const token = req.cookies?.token;
-    if (!token) return res.status(401).json({ message: 'Unauthorized' });
-    const decodedToken = jwt.verify(token, 'tjisismysceerrtetkey');
-    if (!decodedToken) return res.status(401).json({ message: 'Unauthorized' });
-    req.userId = decodedToken.id;
-    next();
+
+const auth = (req, res, next) => {
+    try {
+        const token = req.cookies?.token || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
+        if (!token) return res.status(401).json({ message: 'No token provided' });
+
+        const secret = process.env.JWT_SECRET || 'change_this_secret';
+        const decoded = jwt.verify(token, secret);
+        req.userId = decoded?.id;
+        next();
+    } catch (err) {
+        return res.status(401).json({ message: 'Invalid or expired token' });
+    }
 };
 
-export default isAuthenticated;
+export default auth;
