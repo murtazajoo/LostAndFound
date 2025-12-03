@@ -22,7 +22,10 @@ export const ItemController = async (req, res) => {
 export const FoundItemsController = async (req, res) => {
     try {
         const items = await Item.find({ type: 'found' }).sort({ createdAt: -1 }).limit(100);
-        res.status(200).json(items);
+        res.status(200).json({
+            items,
+            message: 'Items fetched'
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });
@@ -32,7 +35,12 @@ export const FoundItemsController = async (req, res) => {
 export const LostItemsController = async (req, res) => {
     try {
         const items = await Item.find({ type: 'lost' }).sort({ createdAt: -1 }).limit(100);
-        res.status(200).json(items);
+        res.status(200).json(
+            {
+                items,
+                message: 'Items fetched'
+            }
+        );
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });
@@ -45,7 +53,10 @@ export const getSingleItemController = async (req, res) => {
         if (!mongoose.isValidObjectId(id)) return res.status(400).json({ message: 'Invalid id' });
         const item = await Item.findById(id).populate('userId', 'name email');
         if (!item) return res.status(404).json({ message: 'Not found' });
-        res.status(200).json(item);
+        res.status(200).json({
+            item,
+            message: 'Item fetched'
+        });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });
