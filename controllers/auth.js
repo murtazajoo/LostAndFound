@@ -16,7 +16,7 @@ export const registerController = async (req, res) => {
         const user = await User.create({ name, email, password: hashed });
 
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'change_this_secret', { expiresIn: '7d' });
-        res.cookie('token', token, { httpOnly: true, sameSite: 'lax' });
+        res.cookie('token', token, { sameSite: 'none', secure: true, path: '/', httpOnly: true });
         res.status(201).json({ message: 'User created', userId: user._id, token });
     } catch (err) {
         console.error(err);

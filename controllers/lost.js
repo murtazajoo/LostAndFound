@@ -85,8 +85,10 @@ export const markItemAsClaimedController = async (req, res) => {
         const item = await Item.findById(id);
         if (!item) return res.status(404).json({ message: 'Not found' });
         if (item.claimed) return res.status(400).json({ message: 'Already claimed' });
+        if (req.userId !== String(item.userId)) {
+            return res.status(403).json({ message: 'Forbidden' });
+        }
         item.claimed = true;
-        item.claimedBy = req.userId;
         await item.save();
         res.status(200).json({ message: 'Marked as claimed', item });
     } catch (err) {
