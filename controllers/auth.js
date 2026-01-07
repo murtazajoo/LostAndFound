@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import OTP from '../models/otp.js';
 
 export const registerController = async (req, res) => {
     try {
@@ -12,6 +13,9 @@ export const registerController = async (req, res) => {
 
         const salt = await bcrypt.genSalt(10);
         const hashed = await bcrypt.hash(password, salt);
+
+        const isVerifiedEmail = await OTP.findOne({ email, verified: true });
+        if (!isVerifiedEmail) return res.status(400).json({ message: 'Email not verified' });
 
         const user = await User.create({ name, email, password: hashed });
 

@@ -7,6 +7,7 @@ import express from 'express';
 import { connectDb } from './db/db.js';
 import authRouter from './routes/auth.js';
 import itemRouter from './routes/item.js';
+import mailRouter from './routes/mail.js';
 
 dotenv.config();
 
@@ -14,8 +15,9 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-    origin:
-        "https://lost-and-found-asc.vercel.app"
+    // origin:
+    //     "https://lost-and-found-asc.vercel.app"
+    origin: "http://localhost:3001"
     , credentials: true
 }));
 
@@ -27,6 +29,8 @@ app.use(cookieParser());
 
 app.use('/', authRouter);
 app.use('/', itemRouter);
+app.use('/mail/', mailRouter);
+
 
 connectDb();
 

@@ -1,3 +1,6 @@
 MONGO_URI=mongodb://127.0.0.1:27017/lostandfound
 PORT=3000
 JWT_SECRET=change_this_secret
+
+SMTP_USER=
+SMTP_PASS=
