@@ -3,6 +3,8 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
+import http from 'http';
+import { Server } from 'socket.io';
 
 import { connectDb } from './db/db.js';
 import authRouter from './routes/auth.js';
@@ -12,12 +14,12 @@ import mailRouter from './routes/mail.js';
 dotenv.config();
 
 const app = express();
+
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-    origin: process.env.FRONTEND_URL ||
-        "http://localhost:3001"
-    , credentials: true
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    credentials: true
 }));
 
 
@@ -30,12 +32,36 @@ app.use('/', authRouter);
 app.use('/', itemRouter);
 app.use('/mail/', mailRouter);
 
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: process.env.FRONTEND_URL || "http://localhost:3000",
+        methods: ["GET", "POST"],
+        credentials: true
+    }
+});
 
 connectDb();
 
-app.listen(PORT, () => {
+io.on('connection', (socket) => {
+    console.log('A user connected: ' + socket.id);
+
+    socket.on('joinRoom', (roomId) => {
+        socket.join(roomId);
+    });
+
+    socket.on("send_message", (data) => {
+        console.log("Message received: ", data);
+        io.to(data.room).emit("receive_message", data);
+    });
+
+
+});
+
+
+server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 }
 );
 
-export default app;
+export default server;
