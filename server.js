@@ -7,7 +7,10 @@ import http from 'http';
 import { Server } from 'socket.io';
 
 import { connectDb } from './db/db.js';
+import messages from './models/messages.js';
+import room from './models/room.js';
 import authRouter from './routes/auth.js';
+import ChatRouter from './routes/chat.js';
 import itemRouter from './routes/item.js';
 import mailRouter from './routes/mail.js';
 
@@ -18,7 +21,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: process.env.FRONTEND_URL,
     credentials: true
 }));
 
@@ -31,11 +34,13 @@ app.use(cookieParser());
 app.use('/', authRouter);
 app.use('/', itemRouter);
 app.use('/mail/', mailRouter);
+app.use('/', ChatRouter);
+
 
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: process.env.FRONTEND_URL || "http://localhost:3000",
+        origin: process.env.FRONTEND_URL,
         methods: ["GET", "POST"],
         credentials: true
     }
@@ -43,16 +48,43 @@ const io = new Server(server, {
 
 connectDb();
 
+const activeUsers = new Map();
+
 io.on('connection', (socket) => {
-    console.log('A user connected: ' + socket.id);
+
+    socket.on('register', (userId) => {
+        activeUsers.set(userId, socket.id);
+        io.emit('activeUsers', Array.from(activeUsers.keys()));
+    });
+
+    socket.on('disconnect', () => {
+        for (const [userId, sId] of activeUsers.entries()) {
+            if (sId === socket.id) {
+                activeUsers.delete(userId);
+                io.emit('activeUsers', Array.from(activeUsers.keys()));
+                break;
+            }
+        }
+    });
 
     socket.on('joinRoom', (roomId) => {
         socket.join(roomId);
     });
 
-    socket.on("send_message", (data) => {
-        console.log("Message received: ", data);
+    socket.on("send_message", async (data) => {
+        /*data should contain:
+        {
+    room: "roomId",
+    sender: "senderId",
+    receiver: "receiverId",
+    content: "message content"
+}
+        */
+        io.to(`u_${data.receiver}`).emit("receive_message", data);
         io.to(data.room).emit("receive_message", data);
+        await messages.create(data);
+        await room.findByIdAndUpdate(data.room, { $addToSet: { unreadBy: data.receiver } });
+
     });
 
 
