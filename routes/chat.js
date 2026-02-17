@@ -9,7 +9,7 @@ const ChatRouter = express.Router();
 
 ChatRouter.get('/chat/rooms', isAuthenticated, async (req, res) => {
     try {
-        const rooms = await Room.find({ members: { $in: [req.userId] } }).populate('members', 'name email').populate('itemId', 'itemName').sort({ updatedAt: -1 });
+        const rooms = await Room.find({ members: { $in: [req.userId] } }).populate('members', 'name email').populate('itemId', 'itemName imageUrl').sort({ updatedAt: -1 });
         res.status(200).json({ rooms });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -23,15 +23,15 @@ ChatRouter.post('/chat/rooms', isAuthenticated, async (req, res) => {
     if (!itemId) {
         return res.status(400).json({ message: 'Item ID is required to create a chat room' });
     }
+    if (!name || !members || !Array.isArray(members) || members.length === 0 || members.some(member => typeof member !== 'string')) {
+        return res.status(400).json({ message: 'Name and members are required' });
+    }
     try {
-        const existingRoom = await Room.findOne({ itemId, members: { $in: [req.userId] } }).populate('members', 'name email').populate('itemId', 'itemName');
+        const existingRoom = await Room.findOne({ itemId, members: { $all: [req.userId, ...members] } }).populate('members', 'name email').populate('itemId', 'itemName imageUrl');
         if (existingRoom) {
             return res.status(200).json({ message: 'Chat room with the same name and members already exists', room: existingRoom });
         }
 
-        if (!name || !members || !Array.isArray(members) || members.length === 0 || members.some(member => typeof member !== 'string')) {
-            return res.status(400).json({ message: 'Name and members are required' });
-        }
         if (members.includes(req.userId)) {
             return res.status(400).json({ message: 'You cannot create a chat room with yourself as a member' });
         }
@@ -45,7 +45,7 @@ ChatRouter.post('/chat/rooms', isAuthenticated, async (req, res) => {
         const createdRoom = await Room.create({ name, members: [...members, req.userId], itemId });
 
         // Then populate it
-        const room = await Room.findById(createdRoom._id).populate('members', 'name email').populate('itemId', 'itemName');
+        const room = await Room.findById(createdRoom._id).populate('members', 'name email').populate('itemId', 'itemName imageUrl');
 
         res.status(200).json({ message: 'Chat room created successfully', room });
     } catch (error) {
