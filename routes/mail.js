@@ -1,29 +1,18 @@
 import express from 'express';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import OTP from '../models/otp.js';
 
 const Router = express.Router();
-
-
-
-
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 
 Router.post('/otp/send', async (req, res) => {
     const { email } = req.body;
-    const transporter = nodemailer.createTransport({
-        service: "Gmail",
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-        },
-    });
-
     const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
 
     const message = {
-        from: process.env.SMTP_USER,
-        to: email,
+        from: process.env.RESEND_FROM_EMAIL,
+        to: [email],
         subject: "Your OTP Code for Findrr",
         text: `Your OTP is: ${generatedOtp}`,
         html: `<p>Your OTP is: <b>${generatedOtp}</b>
@@ -31,8 +20,8 @@ Router.post('/otp/send', async (req, res) => {
         </p>`,
     };
     try {
+        await resend.emails.send(message);
         await OTP.create({ email, otp: generatedOtp });
-        await transporter.sendMail(message);
         res.status(200).json({ message: `OTP sent to ${email}` });
     } catch (error) {
         console.log(error)
